@@ -91,9 +91,9 @@ app.layout = html.Div([
 
     html.H4("Parâmetros (dias)"),
     html.Div([
-        dcc.Input(id="dias-alarmes", type="number", placeholder="Alarmes"),
-        dcc.Input(id="dias-insights", type="number", placeholder="Insights"),
-        dcc.Input(id="dias-notas", type="number", placeholder="Notas vencidas"),
+        dcc.Input(id="dias-alarmes", type="number", placeholder="Linha de corte alarmes"),
+        dcc.Input(id="dias-insights", type="number", placeholder="Linha de corte insights"),
+        dcc.Input(id="dias-notas", type="number", placeholder="Linha de corte notas"),
     ], style={"display": "flex", "gap": "20px"}),
 
     html.Br(),
@@ -139,7 +139,7 @@ app.layout = html.Div([
 
 
 # ======================================================
-# CALLBACKS DE UPLOAD (INDIVIDUAIS)
+# CALLBACKS DE UPLOAD (UM POR ARQUIVO)
 # ======================================================
 
 def upload_callback(upload_id, store_id):
@@ -152,7 +152,10 @@ def upload_callback(upload_id, store_id):
     )
     def _callback(contents, filename):
         df = parse_contents(contents, filename)
-        return df.to_dict("records"), html.Div(f"✔ {filename}", style={"color": "green"})
+        return (
+            df.to_dict("records"),
+            html.Div(f"✔ {filename}", style={"color": "green"})
+        )
 
 
 upload_callback("upload-base", "store-base")
@@ -196,9 +199,6 @@ def processar(n, base, mosaic, notas, ordem_notas, ordem_planos, insights,
     # ----------------------------
     base = pd.DataFrame(base)
     mosaic = pd.DataFrame(mosaic)
-    notas = pd.DataFrame(notas)
-    ordem_notas = pd.DataFrame(ordem_notas)
-    ordem_planos = pd.DataFrame(ordem_planos)
     insights = pd.DataFrame(insights)
 
     # ----------------------------
@@ -237,12 +237,32 @@ def processar(n, base, mosaic, notas, ordem_notas, ordem_planos, insights,
     )
 
     # ----------------------------
-    # REGRAS (SIMPLIFICADAS PARA RENDER FREE)
+    # REGRAS COM DATAS
     # ----------------------------
-    cond1 = base["STATUS DO PONTO DE MONITORAMENTO"].str.contains("A1|A2", na=False)
-    cond2 = base["INSIGHTS"] == "SIM"
+    cond1 = (
+        base["STATUS DO PONTO DE MONITORAMENTO"].str.contains("A1|A2", na=False)
+        & (
+            base["DATA DA ÚLTIMA ANÁLISE"].isna()
+            | (base["DATA DA ÚLTIMA ANÁLISE"].apply(days_diff) > dias_alarm)
+        )
+    )
+
+    cond2 = (
+        (base["INSIGHTS"] == "SIM")
+        & (
+            base["DATA DA ÚLTIMA ANÁLISE"].isna()
+            | (base["DATA DA ÚLTIMA ANÁLISE"].apply(days_diff) > dias_insight)
+        )
+    )
 
     df_final = base[cond1 | cond2]
+
+    # ----------------------------
+    # ORDENAÇÃO FINAL
+    # ----------------------------
+    df_final = df_final.sort_values(
+        by=["ANALISTA RESPONSÁVEL", "MÁQUINA", "SPOTNAME"]
+    )
 
     # ----------------------------
     # RESUMO POR ANALISTA

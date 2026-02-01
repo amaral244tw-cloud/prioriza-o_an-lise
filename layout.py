@@ -88,6 +88,22 @@ layout = html.Div([
         ]),
     ], style={"display": "flex", "gap": "30px"}),
 
+    html.Br(),
+
+    # --- filtro de alarme ---
+    html.Div([
+        html.Label("Filtro de alarme", style={"fontWeight": "bold"}),
+        dcc.Checklist(
+            id="filtro-alarme",
+            options=[
+                {"label": " A1", "value": "A1"},
+                {"label": " A2", "value": "A2"},
+            ],
+            value=["A1", "A2"],  # ambos selecionados por padrão
+            inline=True,
+        ),
+    ]),
+
     html.Hr(),
 
     # --- stores internos ---

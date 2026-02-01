@@ -140,8 +140,9 @@ def register_callbacks(app):
         Input("dias-alarmes", "value"),
         Input("dias-insights", "value"),
         Input("dias-notas", "value"),
+        Input("filtro-alarme", "value"),
     )
-    def aplicar_regras(data, dias_alarm, dias_insight, dias_nota):
+    def aplicar_regras(data, dias_alarm, dias_insight, dias_nota, filtro_alarme):
         # Se não há dados ainda (uploads incompletos), bloqueia normalmente.
         if not data:
             raise PreventUpdate
@@ -158,11 +159,16 @@ def register_callbacks(app):
 
         dias_col = df["DATA DA ÚLTIMA ANÁLISE"].apply(days_diff)
 
-        # Cond1: alarmes A1/A2 com análise antiga ou ausente
-        cond1 = (
-            df["STATUS DO PONTO DE MONITORAMENTO"].str.contains("A1|A2", case=False, na=False)
-            & (dias_col.isna() | (dias_col > dias_alarm))
-        )
+        # Cond1: alarmes com análise antiga ou ausente.
+        # Se nenhum alarme selecionado, cond1 é False para todas as linhas.
+        if filtro_alarme:
+            padrao_alarme = "|".join(filtro_alarme)  # "A1", "A2" ou "A1|A2"
+            cond1 = (
+                df["STATUS DO PONTO DE MONITORAMENTO"].str.contains(padrao_alarme, case=False, na=False)
+                & (dias_col.isna() | (dias_col > dias_alarm))
+            )
+        else:
+            cond1 = pd.Series(False, index=df.index)
 
         # Cond2: insights com análise antiga ou ausente
         cond2 = (

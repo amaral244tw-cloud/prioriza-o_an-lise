@@ -1,18 +1,24 @@
-
 # app.py
 # App de Priorização de Monitoramento e Manutenção
 # Plotly Dash
 
-import base64, io
+import base64
+import io
 from datetime import datetime
 import pandas as pd
+
 from dash import Dash, dcc, html, Input, Output, State, dash_table
 from dash.exceptions import PreventUpdate
 
 
+# ======================================================
+# FUNÇÕES AUXILIARES
+# ======================================================
+
 def parse_contents(contents, filename):
     content_type, content_string = contents.split(',')
     decoded = base64.b64decode(content_string)
+
     if filename.endswith('.csv'):
         return pd.read_csv(io.StringIO(decoded.decode('utf-8')))
     return pd.read_excel(io.BytesIO(decoded))
@@ -24,13 +30,28 @@ def concat_values(series):
 
 
 def days_diff(date_str):
+    """
+    Calcula diferença em dias entre hoje e uma data no formato DD/MM/YYYY.
+    Datas inválidas ou vazias retornam None.
+    """
     if pd.isna(date_str) or str(date_str).strip() == "":
         return None
-    try:
-        return (datetime.today() - pd.to_datetime(date_str, dayfirst=True)).days
-    except Exception:
+
+    data = pd.to_datetime(
+        date_str,
+        format="%d/%m/%Y",
+        errors="coerce"
+    )
+
+    if pd.isna(data):
         return None
 
+    return (datetime.today() - data).days
+
+
+# ======================================================
+# APP
+# ======================================================
 
 app = Dash(__name__)
 app.title = "Priorização de Monitoramento"
@@ -53,7 +74,12 @@ def upload_box(label, upload_id):
     ])
 
 
+# ======================================================
+# LAYOUT
+# ======================================================
+
 app.layout = html.Div([
+
     html.H2("App de Priorização de Monitoramento e Manutenção"),
 
     html.H4("Uploads obrigatórios"),
@@ -85,7 +111,7 @@ app.layout = html.Div([
         html.Div([
             html.Label("Linha de corte para notas vencidas (nota vencida há)"),
             dcc.Input(id='dias-notas', type='number', style={"width": "100%"})
-        ])
+        ]),
     ], style={"display": "flex", "gap": "30px"}),
 
     html.Hr(),
@@ -120,6 +146,10 @@ app.layout = html.Div([
 ])
 
 
+# ======================================================
+# STATUS VISUAL DOS UPLOADS
+# ======================================================
+
 @app.callback(
     Output('status-upload-base', 'children'),
     Output('status-upload-mosaic', 'children'),
@@ -139,8 +169,13 @@ def mostrar_status(f1, f2, f3, f4, f5, f6):
         if f:
             return html.Div(f"✔ {f}", style={"color": "green", "fontWeight": "bold"})
         return html.Div("❌ Não enviado", style={"color": "red"})
+
     return status(f1), status(f2), status(f3), status(f4), status(f5), status(f6)
 
+
+# ======================================================
+# PROCESSAMENTO BASE
+# ======================================================
 
 @app.callback(
     Output('df-base', 'data'),
@@ -227,6 +262,10 @@ def processar_base(c_base, c_mosaic, c_notas, c_ordem_notas, c_ordem_planos, c_i
     return base.to_dict("records")
 
 
+# ======================================================
+# APLICAÇÃO DAS REGRAS
+# ======================================================
+
 @app.callback(
     Output('tabela-final', 'data'),
     Output('tabela-final', 'columns'),
@@ -239,6 +278,7 @@ def processar_base(c_base, c_mosaic, c_notas, c_ordem_notas, c_ordem_planos, c_i
     Input('dias-notas', 'value')
 )
 def aplicar_regras(data, dias_alarm, dias_insight, dias_nota):
+
     if not data:
         raise PreventUpdate
 
@@ -265,7 +305,9 @@ def aplicar_regras(data, dias_alarm, dias_insight, dias_nota):
         & (df["DATA DE CONCLUSÃO DESEJADA DA NOTA M4"].apply(days_diff) > dias_nota)
     )
 
-    cond4 = df["STATUS DO SISTEMA DA ORDEM"].str.contains("LIB CONF|ENT CONF", case=False, na=False)
+    cond4 = df["STATUS DO SISTEMA DA ORDEM"].str.contains(
+        "LIB CONF|ENT CONF", case=False, na=False
+    )
 
     df_final = df[cond1 | cond2 | cond3 | cond4]
 
@@ -289,6 +331,10 @@ def aplicar_regras(data, dias_alarm, dias_insight, dias_nota):
     )
 
 
+# ======================================================
+# DOWNLOAD
+# ======================================================
+
 @app.callback(
     Output("download-excel", "data"),
     Input("btn-download", "n_clicks"),
@@ -298,9 +344,14 @@ def aplicar_regras(data, dias_alarm, dias_insight, dias_nota):
 def download_excel(n, data):
     if not data:
         raise PreventUpdate
+
     df = pd.DataFrame(data)
     return dcc.send_data_frame(df.to_excel, "LISTA_FINAL_PRIORIZADA.xlsx", index=False)
 
+
+# ======================================================
+# RUN
+# ======================================================
 
 if __name__ == "__main__":
     app.run_server(debug=True)

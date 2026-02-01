@@ -5,7 +5,7 @@ import pandas as pd
 from dash import dcc, html, Input, Output, State
 from dash.exceptions import PreventUpdate
 
-from helpers import parse_contents, concat_values, days_diff, resolver_status_ordem
+from helpers import parse_contents, concat_values, days_diff, resolver_status_ordem, clean_insights
 
 
 def register_callbacks(app):
@@ -80,6 +80,9 @@ def register_callbacks(app):
             mosaic["analysisCreatedAt"], errors="coerce"
         ).dt.strftime("%d/%m/%Y")
 
+        # Limpa insights removendo lixo 'See more (N)'
+        insights_clean = clean_insights(insights)
+
         # --- mapeamentos ---
         base["STATUS DO PONTO DE MONITORAMENTO"] = base["SPOT ID"].map(
             mosaic.groupby("spotId")["status"].apply(concat_values)
@@ -89,7 +92,7 @@ def register_callbacks(app):
             mosaic.groupby("spotId")["DATA_ANALISE_FMT"].apply(concat_values)
         )
 
-        base["INSIGHTS"] = base["MÁQUINA"].isin(insights.iloc[:, 0]).map(
+        base["INSIGHTS"] = base["MÁQUINA"].isin(insights_clean).map(
             lambda x: "SIM" if x else ""
         )
 
@@ -119,7 +122,6 @@ def register_callbacks(app):
         base = base.rename(columns={
             "SPOT ID": "SPOTID",
             "SPOT NAME": "SPOTNAME",
-            "ANALISTA": "ANALISTA RESPONSÁVEL",
         })
 
         return base.to_dict("records")
@@ -168,9 +170,11 @@ def register_callbacks(app):
             & (dias_nota_col > dias_nota)
         )
 
-        # Cond4: ordens com status de confirmação pendente
+        # Cond4: ordens com status de confirmação pendente.
+        # Os status do SAP têm o padrão "LIB  CONF ...", "ENTE CONF ...", "ENCE CONF ...".
+        # Busca por 'CONF' como palavra inteira para cobrir todas as variantes.
         cond4 = df["STATUS DO SISTEMA DA ORDEM"].str.contains(
-            "LIB CONF|ENT CONF", case=False, na=False
+            r"\bCONF\b", case=False, na=False, regex=True
         )
 
         df_final = df[cond1 | cond2 | cond3 | cond4].sort_values(

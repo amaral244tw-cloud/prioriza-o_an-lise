@@ -26,17 +26,31 @@ def concat_values(series: pd.Series) -> str:
 
 def days_diff(date_str) -> "int | None":
     """
-    Calcula diferença em dias entre hoje e uma data no formato DD/MM/YYYY.
+    Calcula diferença em dias entre hoje e uma data.
+    Aceita DD/MM/YYYY e DD.MM.YYYY automaticamente.
     Datas inválidas ou vazias retornam None.
     """
     if pd.isna(date_str) or str(date_str).strip() == "":
         return None
 
-    data = pd.to_datetime(date_str, format="%d/%m/%Y", errors="coerce")
+    # Normaliza ponto para barra antes de parsear
+    normalized = str(date_str).strip().replace(".", "/")
+
+    data = pd.to_datetime(normalized, format="%d/%m/%Y", errors="coerce")
     if pd.isna(data):
         return None
 
     return (datetime.today() - data).days
+
+
+def clean_insights(df: pd.DataFrame) -> pd.Series:
+    """
+    Retorna a coluna de insights limpa: remove linhas do tipo
+    'See more (N)' que vêm como lixo da exportação.
+    """
+    col = df.iloc[:, 0].astype(str).str.strip()
+    mask = ~col.str.contains(r"See\s*more", case=False, regex=True)
+    return col[mask].reset_index(drop=True)
 
 
 def resolver_status_ordem(base: pd.DataFrame, ordem_notas: pd.DataFrame) -> pd.Series:

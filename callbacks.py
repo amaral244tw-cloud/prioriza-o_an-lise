@@ -142,9 +142,16 @@ def register_callbacks(app):
         Input("dias-notas", "value"),
     )
     def aplicar_regras(data, dias_alarm, dias_insight, dias_nota):
-        # Guard: bloqueia se não há dados ou se qualquer parâmetro for None/vazio
-        if not data or any(v is None for v in [dias_alarm, dias_insight, dias_nota]):
+        # Se não há dados ainda (uploads incompletos), bloqueia normalmente.
+        if not data:
             raise PreventUpdate
+
+        # Se algum parâmetro é None (campo apagado durante digitação),
+        # retorna tabelas vazias em vez de PreventUpdate.
+        # Isso evita que o callback fique "travado" e não re-execute
+        # quando o valor volta a ser preenchido.
+        if any(v is None for v in [dias_alarm, dias_insight, dias_nota]):
+            return [], [], [], [], []
 
         df = pd.DataFrame(data)
 

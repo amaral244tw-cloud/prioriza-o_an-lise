@@ -146,12 +146,13 @@ def register_callbacks(app):
         if not data:
             raise PreventUpdate
 
-        # Se algum parâmetro é None (campo apagado durante digitação),
-        # retorna tabelas vazias em vez de PreventUpdate.
-        # Isso evita que o callback fique "travado" e não re-execute
-        # quando o valor volta a ser preenchido.
-        if any(v is None for v in [dias_alarm, dias_insight, dias_nota]):
-            return [], [], [], [], []
+        # Se algum campo foi apagado durante a edição, usa o valor padrão
+        # em vez de retornar vazio ou bloquear com PreventUpdate.
+        # Isso mantém a tabela sempre com resultados válidos.
+        from layout import DEFAULT_DIAS_ALARMES, DEFAULT_DIAS_INSIGHTS, DEFAULT_DIAS_NOTAS
+        dias_alarm   = dias_alarm   if dias_alarm   is not None else DEFAULT_DIAS_ALARMES
+        dias_insight = dias_insight if dias_insight is not None else DEFAULT_DIAS_INSIGHTS
+        dias_nota    = dias_nota    if dias_nota    is not None else DEFAULT_DIAS_NOTAS
 
         df = pd.DataFrame(data)
 

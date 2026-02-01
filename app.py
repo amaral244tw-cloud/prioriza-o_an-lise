@@ -12,10 +12,10 @@ from dash.exceptions import PreventUpdate
 # ======================================================
 
 def parse_contents(contents, filename):
-    content_type, content_string = contents.split(',')
+    content_type, content_string = contents.split(",")
     decoded = base64.b64decode(content_string)
 
-    if filename.endswith(".csv"):
+    if filename.lower().endswith(".csv"):
         return pd.read_csv(io.StringIO(decoded.decode("utf-8")))
     return pd.read_excel(io.BytesIO(decoded))
 
@@ -97,12 +97,16 @@ app.layout = html.Div([
     ], style={"display": "flex", "gap": "20px"}),
 
     html.Br(),
-    html.Button("PROCESSAR DADOS", id="btn-processar", style={
-        "backgroundColor": "#2ecc71",
-        "color": "white",
-        "padding": "10px",
-        "fontWeight": "bold"
-    }),
+    html.Button(
+        "PROCESSAR DADOS",
+        id="btn-processar",
+        style={
+            "backgroundColor": "#2ecc71",
+            "color": "white",
+            "padding": "10px",
+            "fontWeight": "bold"
+        }
+    ),
 
     html.Hr(),
 
@@ -135,7 +139,7 @@ app.layout = html.Div([
 
 
 # ======================================================
-# CALLBACKS DE UPLOAD (UM POR ARQUIVO)
+# CALLBACKS DE UPLOAD (INDIVIDUAIS)
 # ======================================================
 
 def upload_callback(upload_id, store_id):
@@ -148,10 +152,7 @@ def upload_callback(upload_id, store_id):
     )
     def _callback(contents, filename):
         df = parse_contents(contents, filename)
-        return (
-            df.to_dict("records"),
-            html.Div(f"✔ {filename}", style={"color": "green"})
-        )
+        return df.to_dict("records"), html.Div(f"✔ {filename}", style={"color": "green"})
 
 
 upload_callback("upload-base", "store-base")
@@ -190,6 +191,9 @@ def processar(n, base, mosaic, notas, ordem_notas, ordem_planos, insights,
     if not all([base, mosaic, notas, ordem_notas, ordem_planos, insights]):
         raise PreventUpdate
 
+    # ----------------------------
+    # DATAFRAMES
+    # ----------------------------
     base = pd.DataFrame(base)
     mosaic = pd.DataFrame(mosaic)
     notas = pd.DataFrame(notas)
@@ -197,27 +201,52 @@ def processar(n, base, mosaic, notas, ordem_notas, ordem_planos, insights,
     ordem_planos = pd.DataFrame(ordem_planos)
     insights = pd.DataFrame(insights)
 
+    # ----------------------------
+    # NORMALIZA COLUNAS BASE
+    # ----------------------------
+    base.columns = [c.strip().upper() for c in base.columns]
+
+    if "ANALISTA RESPONSÁVEL" not in base.columns and "ANALISTA" in base.columns:
+        base.rename(columns={"ANALISTA": "ANALISTA RESPONSÁVEL"}, inplace=True)
+
+    base.rename(columns={
+        "SPOT ID": "SPOTID",
+        "SPOT NAME": "SPOTNAME"
+    }, inplace=True)
+
+    # ----------------------------
+    # MOSAIC
+    # ----------------------------
     mosaic["DATA_FMT"] = pd.to_datetime(
         mosaic["analysisCreatedAt"], errors="coerce"
     ).dt.strftime("%d/%m/%Y")
 
-    base["STATUS DO PONTO DE MONITORAMENTO"] = base["SPOT ID"].map(
+    base["STATUS DO PONTO DE MONITORAMENTO"] = base["SPOTID"].map(
         mosaic.groupby("spotId")["status"].apply(concat_values)
     )
 
-    base["DATA DA ÚLTIMA ANÁLISE"] = base["SPOT ID"].map(
+    base["DATA DA ÚLTIMA ANÁLISE"] = base["SPOTID"].map(
         mosaic.groupby("spotId")["DATA_FMT"].apply(concat_values)
     )
 
+    # ----------------------------
+    # INSIGHTS
+    # ----------------------------
     base["INSIGHTS"] = base["MÁQUINA"].isin(insights.iloc[:, 0]).map(
         lambda x: "SIM" if x else ""
     )
 
+    # ----------------------------
+    # REGRAS (SIMPLIFICADAS PARA RENDER FREE)
+    # ----------------------------
     cond1 = base["STATUS DO PONTO DE MONITORAMENTO"].str.contains("A1|A2", na=False)
     cond2 = base["INSIGHTS"] == "SIM"
 
     df_final = base[cond1 | cond2]
 
+    # ----------------------------
+    # RESUMO POR ANALISTA
+    # ----------------------------
     resumo = (
         df_final
         .groupby("ANALISTA RESPONSÁVEL")

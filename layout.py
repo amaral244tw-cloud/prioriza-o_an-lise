@@ -11,10 +11,19 @@ DEFAULT_DIAS_INSIGHTS = 30
 DEFAULT_DIAS_NOTAS = 0
 
 
-def upload_box(label: str, upload_id: str):
+def upload_box(label: str, upload_id: str, subtitle: str = ""):
     """Componente reutilizável de upload com status."""
     return html.Div([
-        html.Div(label, style={"fontWeight": "bold"}),
+        html.Div(label, style={
+            "fontWeight": "bold",
+            "fontSize": "16px",
+            "marginBottom": "5px",
+        }),
+        html.Div(subtitle, style={
+            "fontSize": "11px",
+            "color": "#666",
+            "marginBottom": "8px",
+        }) if subtitle else None,
         dcc.Upload(
             id=upload_id,
             children=html.Div("Clique ou arraste o arquivo"),
@@ -31,17 +40,38 @@ def upload_box(label: str, upload_id: str):
 
 layout = html.Div([
 
-    html.H2("App de Priorização de Monitoramento e Manutenção"),
+    html.H1("PRIORIZAÇÃO DE ANÁLISE", style={"textAlign": "center", "marginBottom": "30px"}),
 
     # --- uploads ---
-    html.H4("Uploads obrigatórios"),
+    html.H4("UPLOADS OBRIGATÓRIOS"),
     html.Div([
-        upload_box("BASE", "upload-base"),
-        upload_box("MOSAIC REPORT", "upload-mosaic"),
-        upload_box("NOTAS M4", "upload-notas"),
-        upload_box("ORDENS DAS NOTAS", "upload-ordem-notas"),
-        upload_box("ORDENS DOS PLANOS AV", "upload-ordem-planos"),
-        upload_box("INSIGHTS", "upload-insights"),
+        upload_box(
+            "BASE.XLSX",
+            "upload-base",
+            "MÁQUINA | SUBCONJUNTO | SPOT ID | SPOT NAME | ANALISTA RESPONSÁVEL"
+        ),
+        upload_box(
+            "MOSAIC REPORT.CSV",
+            "upload-mosaic",
+        ),
+        upload_box(
+            "NOTAS M4.XLSX",
+            "upload-notas",
+            "Local de instalação | Ordem | Nota | Descrição | Início desejado | Conclusão desejada | Executado por | Status usuário"
+        ),
+        upload_box(
+            "ORDENS DAS NOTAS.XLSX",
+            "upload-ordem-notas",
+            "Tipo de ordem | Local de instalação | Data-base do início | Texto breve | Ordem | Denominação do loc.instalação | Grupo planej. | Nota | Status do sistema"
+        ),
+        upload_box(
+            "ORDENS DOS PLANOS AV.XLSX",
+            "upload-ordem-planos",
+        ),
+        upload_box(
+            "INSIGHTS.XLSX",
+            "upload-insights",
+        ),
     ], style={
         "display": "grid",
         "gridTemplateColumns": "repeat(3, 1fr)",
@@ -51,10 +81,10 @@ layout = html.Div([
     html.Hr(),
 
     # --- parâmetros com valores padrão ---
-    html.H4("Parâmetros (dias)"),
+    html.H4("PARÂMETROS (DIAS)"),
     html.Div([
         html.Div([
-            html.Label("Linha de corte para alarmes (última análise há)"),
+            html.Label("LINHA DE CORTE PARA ALARMES (ÚLTIMA ANÁLISE HÁ)"),
             dcc.Input(
                 id="dias-alarmes",
                 type="number",
@@ -65,7 +95,7 @@ layout = html.Div([
             ),
         ]),
         html.Div([
-            html.Label("Linha de corte para insights (última análise há)"),
+            html.Label("LINHA DE CORTE PARA INSIGHTS (ÚLTIMA ANÁLISE HÁ)"),
             dcc.Input(
                 id="dias-insights",
                 type="number",
@@ -76,7 +106,7 @@ layout = html.Div([
             ),
         ]),
         html.Div([
-            html.Label("Linha de corte para notas vencidas (nota vencida há)"),
+            html.Label("LINHA DE CORTE PARA NOTAS VENCIDAS (NOTA VENCIDA HÁ)"),
             dcc.Input(
                 id="dias-notas",
                 type="number",
@@ -92,7 +122,7 @@ layout = html.Div([
 
     # --- filtro de alarme ---
     html.Div([
-        html.Label("Filtro de alarme", style={"fontWeight": "bold"}),
+        html.Label("FILTRO DE ALARME", style={"fontWeight": "bold"}),
         dcc.Checklist(
             id="filtro-alarme",
             options=[
@@ -111,7 +141,7 @@ layout = html.Div([
     dcc.Store(id="df-final"),
 
     # --- tabela resumo ---
-    html.H4("Impacto por analista"),
+    html.H4("IMPACTO POR ANALISTA"),
     dash_table.DataTable(
         id="tabela-analista",
         page_size=5,
@@ -121,7 +151,7 @@ layout = html.Div([
     html.Hr(),
 
     # --- tabela principal ---
-    html.H4("Lista final"),
+    html.H4("LISTA FINAL"),
     dash_table.DataTable(
         id="tabela-final",
         filter_action="native",
@@ -136,4 +166,8 @@ layout = html.Div([
     html.Br(),
     html.Button("Download Excel", id="btn-download"),
     dcc.Download(id="download-excel"),
-])
+], style={
+    "backgroundColor": "#f5f5f5",
+    "padding": "30px",
+    "minHeight": "100vh",
+})

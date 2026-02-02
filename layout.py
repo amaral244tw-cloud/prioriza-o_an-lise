@@ -67,6 +67,7 @@ layout = html.Div([
         upload_box(
             "ORDENS DOS PLANOS AV.XLSX",
             "upload-ordem-planos",
+            "Tipo de ordem | Local de instalação | Data-base do início | Texto breve | Ordem | Denominação do loc.instalação | Grupo planej. | Nota | Status do sistema | Status usuário"
         ),
         upload_box(
             "INSIGHTS.XLSX",

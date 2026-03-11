@@ -607,29 +607,38 @@ def register_callbacks(app):
             todas_maquinas_qualificadas.update(maquinas_qualificadas)
         
         # FILTRO GLOBAL: Remover máquinas onde TODOS os spots têm coleta defasada
-        # Calcular dias desde última coleta para cada ponto
+        # Calcular dias desde última coleta para cada ponto (SEMPRE recalcular, não usar cache)
+        print(f"DEBUG: Recalculando DIAS_DESDE_COLETA com dias_coleta={dias_coleta}")
         df["DIAS_DESDE_COLETA"] = df["DATA DA ÚLTIMA COLETA"].apply(days_since_last_sync)
         
-        # DEBUG: Verificar distribuição de dias de coleta
-        coleta_stats = df["DIAS_DESDE_COLETA"].describe()
-        pontos_com_coleta_ok_OLD = (df["DIAS_DESDE_COLETA"].isna()) | (df["DIAS_DESDE_COLETA"] <= dias_coleta)
-        pontos_com_coleta_ok_NEW = (df["DIAS_DESDE_COLETA"].notna()) & (df["DIAS_DESDE_COLETA"] <= dias_coleta)
+        # Verificar se está recalculando mesmo
         print(f"DEBUG COLETA: Total pontos base: {len(df)}")
         print(f"DEBUG COLETA: Pontos sem dados coleta (None): {df['DIAS_DESDE_COLETA'].isna().sum()}")
-        print(f"DEBUG COLETA: Pontos com coleta <= {dias_coleta} dias: {(df['DIAS_DESDE_COLETA'] <= dias_coleta).sum()}")
-        print(f"DEBUG COLETA: Pontos OK LÓGICA ANTIGA (None OU ≤ {dias_coleta}): {pontos_com_coleta_ok_OLD.sum()}")
-        print(f"DEBUG COLETA: Pontos OK LÓGICA NOVA (NOT None E ≤ {dias_coleta}): {pontos_com_coleta_ok_NEW.sum()}")
+        print(f"DEBUG COLETA: Pontos com coleta ≤ {dias_coleta} dias: {(df['DIAS_DESDE_COLETA'] <= dias_coleta).sum()}")
+        print(f"DEBUG COLETA: Pontos OK (NOT None E ≤ {dias_coleta}): {((df['DIAS_DESDE_COLETA'].notna()) & (df['DIAS_DESDE_COLETA'] <= dias_coleta)).sum()}")
         
         print(f"DEBUG: Total de máquinas qualificadas antes do filtro de coleta: {len(todas_maquinas_qualificadas)}")
         print(f"DEBUG: Linha de corte configurada: {dias_coleta} dias")
         
         # Para cada máquina qualificada, verificar se pelo menos 1 spot tem coleta atualizada
+        # CRÍTICO: Verificar apenas nos pontos que pertencem às máquinas qualificadas
+        df_qualificado = df[df["MÁQUINA"].isin(todas_maquinas_qualificadas)]
+        
         maquinas_com_coleta_ok = set()
         maquinas_removidas_detalhes = []
         
-        for maquina in todas_maquinas_qualificadas:
-            pontos_maquina = df[df["MÁQUINA"] == maquina]
+        print(f"DEBUG LOOP: Iniciando loop com dias_coleta={dias_coleta}")
+        
+        for i, maquina in enumerate(todas_maquinas_qualificadas):
+            pontos_maquina = df_qualificado[df_qualificado["MÁQUINA"] == maquina]
             dias_coleta_maquina = pontos_maquina["DIAS_DESDE_COLETA"]
+            
+            # Log da primeira máquina para debug
+            if i == 0:
+                print(f"DEBUG PRIMEIRA MÁQUINA: {maquina}")
+                print(f"  dias_coleta={dias_coleta}")
+                print(f"  Valores DIAS_DESDE_COLETA: {dias_coleta_maquina.tolist()[:5]}")
+                print(f"  Verificando: (notna) & (<= {dias_coleta})")
             
             # Se pelo menos 1 spot tem coleta atualizada E COM DADOS (não None), a máquina passa
             # Mudança: None agora NÃO passa mais (Opção B)

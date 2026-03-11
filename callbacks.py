@@ -491,8 +491,17 @@ def register_callbacks(app):
         from layout import DEFAULT_DIAS_ALARMES, DEFAULT_DIAS_INSIGHTS, DEFAULT_DIAS_NOTAS
         
         if filtros_ids and filtros_alarme_values:
-            # Verificar se todas as listas têm o mesmo tamanho
             num_analistas = len(filtros_ids)
+            
+            # Se os inputs de dias estiverem vazios, usar defaults
+            if len(dias_alarmes_values) == 0:
+                dias_alarmes_values = [DEFAULT_DIAS_ALARMES] * num_analistas
+            if len(dias_insights_values) == 0:
+                dias_insights_values = [DEFAULT_DIAS_INSIGHTS] * num_analistas
+            if len(dias_notas_values) == 0:
+                dias_notas_values = [DEFAULT_DIAS_NOTAS] * num_analistas
+            
+            # Verificar se todas as listas têm o mesmo tamanho
             if (len(filtros_alarme_values) >= num_analistas and 
                 len(dias_alarmes_values) >= num_analistas and
                 len(dias_insights_values) >= num_analistas and
@@ -508,7 +517,15 @@ def register_callbacks(app):
                     }
             else:
                 print(f"DEBUG aplicar_regras: Tamanhos incompatíveis - ids:{len(filtros_ids)}, alarmes:{len(filtros_alarme_values)}, dias_alarmes:{len(dias_alarmes_values)}, dias_insights:{len(dias_insights_values)}, dias_notas:{len(dias_notas_values)}")
-                raise PreventUpdate
+                # Usar configuração padrão para todos
+                for filtro_id in filtros_ids:
+                    analista = filtro_id["analista"]
+                    config_por_analista[analista] = {
+                        "filtro_alarme": ["A1", "A2"],
+                        "dias_alarmes": DEFAULT_DIAS_ALARMES,
+                        "dias_insights": DEFAULT_DIAS_INSIGHTS,
+                        "dias_notas": DEFAULT_DIAS_NOTAS,
+                    }
 
         dias_col = df["DATA DA ÚLTIMA ANÁLISE"].apply(days_diff)
 

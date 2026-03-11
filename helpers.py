@@ -108,6 +108,11 @@ def resolver_status_ordem(base: pd.DataFrame, ordem_notas: pd.DataFrame) -> pd.S
         .str.strip()
         .to_frame("Ordem")
     )
+    
+    # Verificar se a coluna existe
+    if "Status do sistema" not in ordem_notas.columns:
+        print(f"ERRO: Coluna 'Status do sistema' não encontrada. Colunas disponíveis: {list(ordem_notas.columns)}")
+        return pd.Series("", index=base.index)
 
     merged = exploded.merge(
         ordem_notas[["Ordem", "Status do sistema"]],

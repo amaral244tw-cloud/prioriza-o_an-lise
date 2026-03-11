@@ -555,17 +555,20 @@ def register_callbacks(app):
             # Cond1: alarmes com análise antiga ou ausente (com filtro específico do analista)
             if filtro_alarme_analista:
                 padrao_alarme = "|".join(filtro_alarme_analista)
+                # Pré-calcular dias_col para os índices do analista (MUITO mais rápido)
+                dias_col_analista = dias_col.loc[df_analista.index]
                 cond1 = (
                     df_analista["STATUS DO PONTO DE MONITORAMENTO"].str.contains(padrao_alarme, case=False, na=False)
-                    & (df_analista.index.map(lambda idx: dias_col[idx]).isna() | (df_analista.index.map(lambda idx: dias_col[idx]) > dias_alarm))
+                    & (dias_col_analista.isna() | (dias_col_analista > dias_alarm))
                 )
             else:
                 cond1 = pd.Series(False, index=df_analista.index)
 
             # Cond2: insights com análise antiga ou ausente
+            dias_col_analista = dias_col.loc[df_analista.index]
             cond2 = (
                 (df_analista["INSIGHTS"] == "SIM")
-                & (df_analista.index.map(lambda idx: dias_col[idx]).isna() | (df_analista.index.map(lambda idx: dias_col[idx]) > dias_insight))
+                & (dias_col_analista.isna() | (dias_col_analista > dias_insight))
             )
 
             # Cond3: notas M4 com conclusão vencida

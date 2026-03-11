@@ -244,18 +244,28 @@ def register_callbacks(app):
         Input("df-base", "data"),
     )
     def gerar_filtros_analistas(data):
+        print(f"DEBUG: gerar_filtros_analistas chamado. Data: {type(data)}, len: {len(data) if data else 0}")
+        
         if not data:
             return html.Div("⚠️ Aguardando upload dos arquivos para gerar filtros...", 
                           style={"color": "#666", "fontStyle": "italic", "padding": "10px"}), {}
 
-        df = pd.DataFrame(data)
+        try:
+            df = pd.DataFrame(data)
+            print(f"DEBUG: DataFrame criado. Shape: {df.shape}, Colunas: {list(df.columns)}")
+        except Exception as e:
+            print(f"DEBUG ERRO ao criar DataFrame: {e}")
+            return html.Div(f"❌ Erro ao processar dados: {str(e)}", 
+                          style={"color": "red", "padding": "10px"}), {}
         
         # Verificar se tem a coluna necessária
         if "ANALISTA RESPONSÁVEL" not in df.columns:
+            print("DEBUG: Coluna ANALISTA RESPONSÁVEL não encontrada")
             return html.Div("❌ Erro: Coluna 'ANALISTA RESPONSÁVEL' não encontrada na base", 
                           style={"color": "red", "padding": "10px"}), {}
         
         analistas = sorted(df["ANALISTA RESPONSÁVEL"].dropna().unique())
+        print(f"DEBUG: Analistas encontrados: {analistas}")
         
         if len(analistas) == 0:
             return html.Div("⚠️ Nenhum analista encontrado na base", 

@@ -627,8 +627,9 @@ def register_callbacks(app):
             pontos_maquina = df[df["MÁQUINA"] == maquina]
             dias_coleta_maquina = pontos_maquina["DIAS_DESDE_COLETA"]
             
-            # Se pelo menos 1 spot tem coleta atualizada (ou valor None), a máquina passa
-            tem_coleta_atualizada = (dias_coleta_maquina.isna()) | (dias_coleta_maquina <= dias_coleta)
+            # Se pelo menos 1 spot tem coleta atualizada E COM DADOS (não None), a máquina passa
+            # Mudança: None agora NÃO passa mais (Opção B)
+            tem_coleta_atualizada = (dias_coleta_maquina.notna()) & (dias_coleta_maquina <= dias_coleta)
             
             if tem_coleta_atualizada.any():
                 maquinas_com_coleta_ok.add(maquina)

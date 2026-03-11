@@ -208,6 +208,14 @@ layout = html.Div([
     dcc.Store(id="df-base"),
     dcc.Store(id="df-final"),
     dcc.Store(id="filtros-por-analista", data={}),  # Store para filtros individuais
+    
+    # Loading indicator
+    dcc.Loading(
+        id="loading-processamento",
+        type="circle",
+        fullscreen=True,
+        children=html.Div(id="loading-output")
+    ),
 
     # --- tabela resumo ---
     html.H4("IMPACTO POR ANALISTA"),

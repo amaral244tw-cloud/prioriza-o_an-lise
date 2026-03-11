@@ -79,24 +79,28 @@ def register_callbacks(app):
 
     @app.callback(
         Output("df-base", "data"),
-        Input("upload-base", "contents"),
-        Input("upload-mosaic", "contents"),
-        Input("upload-notas", "contents"),
-        Input("upload-ordem-notas", "contents"),
-        Input("upload-ordem-planos", "contents"),
-        Input("upload-insights", "contents"),
+        Output("loading-output", "children"),
+        Input("btn-processar-uploads", "n_clicks"),
+        State("upload-base", "contents"),
+        State("upload-mosaic", "contents"),
+        State("upload-notas", "contents"),
+        State("upload-ordem-notas", "contents"),
+        State("upload-ordem-planos", "contents"),
+        State("upload-insights", "contents"),
         State("upload-base", "filename"),
         State("upload-mosaic", "filename"),
         State("upload-notas", "filename"),
         State("upload-ordem-notas", "filename"),
         State("upload-ordem-planos", "filename"),
         State("upload-insights", "filename"),
+        prevent_initial_call=True,
     )
     def processar_base(
+        n_clicks,
         c_base, c_mosaic, c_notas, c_ordem_notas, c_ordem_planos, c_insights,
         f_base, f_mosaic, f_notas, f_ordem_notas, f_ordem_planos, f_insights,
     ):
-        if not all([c_base, c_mosaic, c_notas, c_ordem_notas, c_ordem_planos, c_insights]):
+        if not n_clicks or not all([c_base, c_mosaic, c_notas, c_ordem_notas, c_ordem_planos, c_insights]):
             raise PreventUpdate
 
         base = parse_contents(c_base, f_base)
@@ -228,7 +232,7 @@ def register_callbacks(app):
         # Reordenar e manter só as colunas necessárias (sem SPOTID_TEMP para exibição)
         base = base[colunas_ordem]
 
-        return base.to_dict("records")
+        return base.to_dict("records"), ""
 
     # ======================================================
     # GERAR FILTROS DINÂMICOS POR ANALISTA

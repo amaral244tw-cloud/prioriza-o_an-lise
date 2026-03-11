@@ -151,18 +151,9 @@ def register_callbacks(app):
         base["STATUS DA ÚLTIMA ANÁLISE"] = base["SPOT ID"].map(analysis_status_grouped).apply(processar_analysis_status)
 
         # Mapear data da última coleta usando cache
-        def formatar_data_coleta(data_str):
-            if pd.isna(data_str) or str(data_str).strip() in ["", "-"]:
-                return ""
-            try:
-                dt = pd.to_datetime(data_str, errors="coerce", utc=True, format="ISO8601")
-                if pd.isna(dt):
-                    return ""
-                return dt.strftime("%d/%m/%Y %H:%M")
-            except:
-                return ""
-        
-        base["DATA DA ÚLTIMA COLETA"] = base["SPOT ID"].map(spot_last_sync_grouped).apply(formatar_data_coleta)
+        # Mapear dados do mosaic para a base
+        # NÃO converter data para formato brasileiro - manter ISO para facilitar parse
+        base["DATA DA ÚLTIMA COLETA"] = base["SPOT ID"].map(spot_last_sync_grouped)
         
         # Cache groupby para notas
         notas_grouped = notas.groupby("Local de instalação")["Nota"].apply(concat_values)

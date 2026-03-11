@@ -530,6 +530,11 @@ def register_callbacks(app):
                     }
 
         dias_col = df["DATA DA ÚLTIMA ANÁLISE"].apply(days_diff)
+        
+        # PRÉ-CALCULAR dias de nota para todos os pontos (uma única vez)
+        print("DEBUG: Calculando dias de notas vencidas...")
+        dias_nota_col_global = df["DATA DE CONCLUSÃO DESEJADA DA NOTA M4"].apply(days_diff)
+        print("DEBUG: Dias de notas calculados")
 
         # Criar dicionários para armazenar condições por índice
         condicoes_por_index = {idx: {"cond1": False, "cond2": False, "cond3": False, "cond4": False, "dias_alarm": None, "dias_nota": None} 
@@ -573,8 +578,8 @@ def register_callbacks(app):
                 & (dias_col_analista.isna() | (dias_col_analista > dias_insight))
             )
 
-            # Cond3: notas M4 com conclusão vencida
-            dias_nota_col = df_analista["DATA DE CONCLUSÃO DESEJADA DA NOTA M4"].apply(days_diff)
+            # Cond3: notas M4 com conclusão vencida (usando valor pré-calculado)
+            dias_nota_col = dias_nota_col_global.loc[df_analista.index]
             cond3 = (
                 df_analista["NOTA M4"].notna()
                 & (dias_nota_col.notna())

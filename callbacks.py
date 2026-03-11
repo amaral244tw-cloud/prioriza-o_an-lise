@@ -241,10 +241,21 @@ def register_callbacks(app):
     )
     def gerar_filtros_analistas(data):
         if not data:
-            return html.Div(), {}
+            return html.Div("⚠️ Aguardando upload dos arquivos para gerar filtros...", 
+                          style={"color": "#666", "fontStyle": "italic", "padding": "10px"}), {}
 
         df = pd.DataFrame(data)
+        
+        # Verificar se tem a coluna necessária
+        if "ANALISTA RESPONSÁVEL" not in df.columns:
+            return html.Div("❌ Erro: Coluna 'ANALISTA RESPONSÁVEL' não encontrada na base", 
+                          style={"color": "red", "padding": "10px"}), {}
+        
         analistas = sorted(df["ANALISTA RESPONSÁVEL"].dropna().unique())
+        
+        if len(analistas) == 0:
+            return html.Div("⚠️ Nenhum analista encontrado na base", 
+                          style={"color": "orange", "padding": "10px"}), {}
 
         from layout import DEFAULT_DIAS_ALARMES, DEFAULT_DIAS_INSIGHTS, DEFAULT_DIAS_NOTAS
 

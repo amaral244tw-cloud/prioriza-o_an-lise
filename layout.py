@@ -213,7 +213,14 @@ layout = html.Div([
     html.H4("IMPACTO POR ANALISTA"),
     
     # Container para filtros dinâmicos por analista
-    html.Div(id="filtros-analistas-container", style={"marginBottom": "20px"}),
+    html.Div(
+        id="filtros-analistas-container",
+        children=html.Div(
+            "⚠️ Aguardando upload dos arquivos para gerar filtros por analista...",
+            style={"color": "#666", "fontStyle": "italic", "padding": "10px"}
+        ),
+        style={"marginBottom": "20px"}
+    ),
     
     dash_table.DataTable(
         id="tabela-analista",

@@ -610,6 +610,7 @@ def register_callbacks(app):
         df["DIAS_DESDE_COLETA"] = df["DATA DA ÚLTIMA COLETA"].apply(days_since_last_sync)
         
         print(f"DEBUG: Total de máquinas qualificadas antes do filtro de coleta: {len(todas_maquinas_qualificadas)}")
+        print(f"DEBUG: Linha de corte configurada: {dias_coleta} dias")
         
         # Para cada máquina qualificada, verificar se pelo menos 1 spot tem coleta atualizada
         maquinas_com_coleta_ok = set()
@@ -624,6 +625,7 @@ def register_callbacks(app):
                 maquinas_com_coleta_ok.add(maquina)
         
         print(f"DEBUG: Máquinas com coleta OK (filtro <= {dias_coleta} dias): {len(maquinas_com_coleta_ok)}")
+        print(f"DEBUG: Máquinas REMOVIDAS pelo filtro de coleta: {len(todas_maquinas_qualificadas) - len(maquinas_com_coleta_ok)}")
         
         # Trazer TODOS os pontos das máquinas que passaram no filtro de coleta
         df_final = df[df["MÁQUINA"].isin(maquinas_com_coleta_ok)].sort_values(

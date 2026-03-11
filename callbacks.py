@@ -491,14 +491,24 @@ def register_callbacks(app):
         from layout import DEFAULT_DIAS_ALARMES, DEFAULT_DIAS_INSIGHTS, DEFAULT_DIAS_NOTAS
         
         if filtros_ids and filtros_alarme_values:
-            for i, filtro_id in enumerate(filtros_ids):
-                analista = filtro_id["analista"]
-                config_por_analista[analista] = {
-                    "filtro_alarme": filtros_alarme_values[i] if filtros_alarme_values[i] else [],
-                    "dias_alarmes": dias_alarmes_values[i] if dias_alarmes_values[i] is not None else DEFAULT_DIAS_ALARMES,
-                    "dias_insights": dias_insights_values[i] if dias_insights_values[i] is not None else DEFAULT_DIAS_INSIGHTS,
-                    "dias_notas": dias_notas_values[i] if dias_notas_values[i] is not None else DEFAULT_DIAS_NOTAS,
-                }
+            # Verificar se todas as listas têm o mesmo tamanho
+            num_analistas = len(filtros_ids)
+            if (len(filtros_alarme_values) >= num_analistas and 
+                len(dias_alarmes_values) >= num_analistas and
+                len(dias_insights_values) >= num_analistas and
+                len(dias_notas_values) >= num_analistas):
+                
+                for i, filtro_id in enumerate(filtros_ids):
+                    analista = filtro_id["analista"]
+                    config_por_analista[analista] = {
+                        "filtro_alarme": filtros_alarme_values[i] if filtros_alarme_values[i] else [],
+                        "dias_alarmes": dias_alarmes_values[i] if dias_alarmes_values[i] is not None else DEFAULT_DIAS_ALARMES,
+                        "dias_insights": dias_insights_values[i] if dias_insights_values[i] is not None else DEFAULT_DIAS_INSIGHTS,
+                        "dias_notas": dias_notas_values[i] if dias_notas_values[i] is not None else DEFAULT_DIAS_NOTAS,
+                    }
+            else:
+                print(f"DEBUG aplicar_regras: Tamanhos incompatíveis - ids:{len(filtros_ids)}, alarmes:{len(filtros_alarme_values)}, dias_alarmes:{len(dias_alarmes_values)}, dias_insights:{len(dias_insights_values)}, dias_notas:{len(dias_notas_values)}")
+                raise PreventUpdate
 
         dias_col = df["DATA DA ÚLTIMA ANÁLISE"].apply(days_diff)
 

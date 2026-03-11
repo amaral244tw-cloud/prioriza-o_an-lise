@@ -513,23 +513,19 @@ def register_callbacks(app):
         # Gerar coluna INPUT com badges para cada ponto (OTIMIZADO)
         print(f"DEBUG: Gerando INPUT para {len(df_final)} linhas...")
         try:
-            # Criar coluna INPUT de forma vetorizada
-            input_badges = []
-            for idx in df_final.index:
-                cond_dict = condicoes_por_index.get(idx, {})
-                row = df_final.loc[idx]
-                badge = gerar_badge_input(
+            # Usar apply que é mais rápido que loop manual
+            df_final["INPUT"] = df_final.apply(
+                lambda row: gerar_badge_input(
                     row,
-                    cond_dict.get("dias_alarm"),
-                    cond_dict.get("dias_nota"),
-                    cond_dict.get("cond1", False),
-                    cond_dict.get("cond2", False),
-                    cond_dict.get("cond3", False),
-                    cond_dict.get("cond4", False)
-                )
-                input_badges.append(badge)
-            
-            df_final["INPUT"] = input_badges
+                    condicoes_por_index.get(row.name, {}).get("dias_alarm"),
+                    condicoes_por_index.get(row.name, {}).get("dias_nota"),
+                    condicoes_por_index.get(row.name, {}).get("cond1", False),
+                    condicoes_por_index.get(row.name, {}).get("cond2", False),
+                    condicoes_por_index.get(row.name, {}).get("cond3", False),
+                    condicoes_por_index.get(row.name, {}).get("cond4", False)
+                ),
+                axis=1
+            )
             print(f"DEBUG: INPUT gerado com sucesso")
         except Exception as e:
             # Se falhar, criar coluna vazia para não quebrar

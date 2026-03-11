@@ -484,6 +484,8 @@ def register_callbacks(app):
         # Usar valor padrão se dias_coleta for None
         if dias_coleta is None:
             dias_coleta = 7
+        
+        print(f"DEBUG aplicar_regras: dias_coleta={dias_coleta}, len(data)={len(data)}")
 
         # Criar dicionários de configurações por analista
         config_por_analista = {}
@@ -602,6 +604,8 @@ def register_callbacks(app):
         # Calcular dias desde última coleta para cada ponto
         df["DIAS_DESDE_COLETA"] = df["DATA DA ÚLTIMA COLETA"].apply(days_since_last_sync)
         
+        print(f"DEBUG: Total de máquinas qualificadas antes do filtro de coleta: {len(todas_maquinas_qualificadas)}")
+        
         # Para cada máquina qualificada, verificar se pelo menos 1 spot tem coleta atualizada
         maquinas_com_coleta_ok = set()
         for maquina in todas_maquinas_qualificadas:
@@ -613,6 +617,8 @@ def register_callbacks(app):
             
             if tem_coleta_atualizada.any():
                 maquinas_com_coleta_ok.add(maquina)
+        
+        print(f"DEBUG: Máquinas com coleta OK (filtro <= {dias_coleta} dias): {len(maquinas_com_coleta_ok)}")
         
         # Trazer TODOS os pontos das máquinas que passaram no filtro de coleta
         df_final = df[df["MÁQUINA"].isin(maquinas_com_coleta_ok)].sort_values(

@@ -113,7 +113,7 @@ def register_callbacks(app):
         ordem_notas["Ordem"] = ordem_notas["Ordem"].astype(str)
 
         mosaic["DATA_ANALISE_FMT"] = pd.to_datetime(
-            mosaic["analysisCreatedAt"], errors="coerce"
+            mosaic["analysisCreatedAt"], errors="coerce", format="ISO8601"
         ).dt.strftime("%d/%m/%Y")
 
         # Limpa insights removendo lixo 'See more (N)'
@@ -151,7 +151,7 @@ def register_callbacks(app):
             if pd.isna(data_str) or str(data_str).strip() in ["", "-"]:
                 return ""
             try:
-                dt = pd.to_datetime(data_str, errors="coerce", utc=True)
+                dt = pd.to_datetime(data_str, errors="coerce", utc=True, format="ISO8601")
                 if pd.isna(dt):
                     return ""
                 return dt.strftime("%d/%m/%Y %H:%M")

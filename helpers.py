@@ -39,16 +39,19 @@ def days_diff(date_str) -> "int | None":
 
     date_str_clean = str(date_str).strip()
     
-    # Tentar parsear com pd.to_datetime que aceita múltiplos formatos
-    data = pd.to_datetime(date_str_clean, errors="coerce", dayfirst=True)
-    
-    if pd.isna(data):
-        # Se falhar, tentar normalizar ponto para barra e parsear novamente
+    # Tentar formato ISO primeiro (mais comum vindo do concat_values)
+    if "-" in date_str_clean and len(date_str_clean) == 10:  # YYYY-MM-DD
+        data = pd.to_datetime(date_str_clean, format="%Y-%m-%d", errors="coerce")
+    # Tentar DD/MM/YYYY ou DD.MM.YYYY
+    elif "/" in date_str_clean or "." in date_str_clean:
         normalized = date_str_clean.replace(".", "/")
         data = pd.to_datetime(normalized, format="%d/%m/%Y", errors="coerce")
-        
-        if pd.isna(data):
-            return None
+    else:
+        # Fallback genérico
+        data = pd.to_datetime(date_str_clean, errors="coerce")
+    
+    if pd.isna(data):
+        return None
 
     return (datetime.today() - data.to_pydatetime().replace(tzinfo=None)).days
 

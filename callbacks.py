@@ -123,14 +123,14 @@ def register_callbacks(app):
         # Limpa insights removendo lixo 'See more (N)'
         insights_clean = clean_insights(insights)
 
-        # --- mapeamentos ---
-        base["STATUS DO PONTO DE MONITORAMENTO"] = base["SPOT ID"].map(
-            mosaic.groupby("spotId")["status"].apply(concat_values)
-        )
-
-        base["DATA DA ÚLTIMA ANÁLISE"] = base["SPOT ID"].map(
-            mosaic.groupby("spotId")["DATA_ANALISE_FMT"].apply(concat_values)
-        )
+        # --- mapeamentos (otimizado com cache de groupby) ---
+        status_grouped = mosaic.groupby("spotId")["status"].apply(concat_values)
+        data_analise_grouped = mosaic.groupby("spotId")["DATA_ANALISE_FMT"].apply(concat_values)
+        analysis_status_grouped = mosaic.groupby("spotId")["analysisStatus"].apply(concat_values)
+        spot_last_sync_grouped = mosaic.groupby("spotId")["spotLastSync"].apply(concat_values)
+        
+        base["STATUS DO PONTO DE MONITORAMENTO"] = base["SPOT ID"].map(status_grouped)
+        base["DATA DA ÚLTIMA ANÁLISE"] = base["SPOT ID"].map(data_analise_grouped)
 
         # Mapear analysisStatus e processar para labels legíveis
         def processar_analysis_status(status_str):
@@ -144,13 +144,11 @@ def register_callbacks(app):
             elif status_lower == "no-alert":
                 return "NORMAL"
             else:
-                return status_str  # Mantém original se não reconhecer
+                return status_str
         
-        base["STATUS DA ÚLTIMA ANÁLISE"] = base["SPOT ID"].map(
-            mosaic.groupby("spotId")["analysisStatus"].apply(concat_values)
-        ).apply(processar_analysis_status)
+        base["STATUS DA ÚLTIMA ANÁLISE"] = base["SPOT ID"].map(analysis_status_grouped).apply(processar_analysis_status)
 
-        # Mapear data da última coleta (spotLastSync) e formatar
+        # Mapear data da última coleta usando cache
         def formatar_data_coleta(data_str):
             if pd.isna(data_str) or str(data_str).strip() in ["", "-"]:
                 return ""
@@ -162,36 +160,30 @@ def register_callbacks(app):
             except:
                 return ""
         
-        base["DATA DA ÚLTIMA COLETA"] = base["SPOT ID"].map(
-            mosaic.groupby("spotId")["spotLastSync"].apply(concat_values)
-        ).apply(formatar_data_coleta)
+        base["DATA DA ÚLTIMA COLETA"] = base["SPOT ID"].map(spot_last_sync_grouped).apply(formatar_data_coleta)
+        
+        # Cache groupby para notas
+        notas_grouped = notas.groupby("Local de instalação")["Nota"].apply(concat_values)
+        ordem_norm_grouped = notas.groupby("Local de instalação")["ORDEM_NORM"].apply(concat_values)
+        conclusao_grouped = notas.groupby("Local de instalação")["Conclusão desejada"].apply(concat_values)
 
         base["INSIGHTS"] = base["MÁQUINA"].isin(insights_clean).map(
             lambda x: "SIM" if x else "NÃO"
         )
 
-        base["NOTA M4"] = base["SUBCONJUNTO"].map(
-            notas.groupby("Local de instalação")["Nota"].apply(concat_values)
-        )
-
-        base["ORDEM DA NOTA M4"] = base["SUBCONJUNTO"].map(
-            notas.groupby("Local de instalação")["ORDEM_NORM"].apply(concat_values)
-        )
-
-        base["DATA DE CONCLUSÃO DESEJADA DA NOTA M4"] = base["SUBCONJUNTO"].map(
-            notas.groupby("Local de instalação")["Conclusão desejada"].apply(concat_values)
-        )
+        base["NOTA M4"] = base["SUBCONJUNTO"].map(notas_grouped)
+        base["ORDEM DA NOTA M4"] = base["SUBCONJUNTO"].map(ordem_norm_grouped)
+        base["DATA DE CONCLUSÃO DESEJADA DA NOTA M4"] = base["SUBCONJUNTO"].map(conclusao_grouped)
 
         # --- status da ordem: usa função dedicada com reindex seguro ---
         base["STATUS DO SISTEMA DA ORDEM M4"] = resolver_status_ordem(base, ordem_notas)
 
-        base["NÚMERO DA ORDEM DO PLANO AV"] = base["MÁQUINA"].map(
-            ordem_planos.groupby("Local de instalação")["Ordem"].apply(concat_values)
-        )
+        # Cache groupby para planos
+        ordem_planos_ordem_grouped = ordem_planos.groupby("Local de instalação")["Ordem"].apply(concat_values)
+        ordem_planos_status_grouped = ordem_planos.groupby("Local de instalação")["Status do sistema"].apply(concat_values)
 
-        base["STATUS DO SISTEMA DA ORDEM DO PLANO AV"] = base["MÁQUINA"].map(
-            ordem_planos.groupby("Local de instalação")["Status do sistema"].apply(concat_values)
-        )
+        base["NÚMERO DA ORDEM DO PLANO AV"] = base["MÁQUINA"].map(ordem_planos_ordem_grouped)
+        base["STATUS DO SISTEMA DA ORDEM DO PLANO AV"] = base["MÁQUINA"].map(ordem_planos_status_grouped)
 
         # Criar coluna de link do spot com formato markdown clicável
         from datetime import datetime, timedelta
@@ -231,6 +223,10 @@ def register_callbacks(app):
         
         # Reordenar e manter só as colunas necessárias (sem SPOTID_TEMP para exibição)
         base = base[colunas_ordem]
+        
+        print(f"DEBUG processar_base: Retornando {len(base)} linhas, {len(base.columns)} colunas")
+        print(f"DEBUG processar_base: Colunas: {list(base.columns)}")
+        print(f"DEBUG processar_base: Analistas únicos: {base['ANALISTA RESPONSÁVEL'].unique()}")
 
         return base.to_dict("records"), ""
 

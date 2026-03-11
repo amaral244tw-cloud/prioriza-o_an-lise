@@ -609,6 +609,14 @@ def register_callbacks(app):
         # Calcular dias desde última coleta para cada ponto
         df["DIAS_DESDE_COLETA"] = df["DATA DA ÚLTIMA COLETA"].apply(days_since_last_sync)
         
+        # DEBUG: Verificar distribuição de dias de coleta
+        coleta_stats = df["DIAS_DESDE_COLETA"].describe()
+        pontos_com_coleta_ok = (df["DIAS_DESDE_COLETA"].isna()) | (df["DIAS_DESDE_COLETA"] <= dias_coleta)
+        print(f"DEBUG COLETA: Total pontos base: {len(df)}")
+        print(f"DEBUG COLETA: Pontos sem dados coleta (None): {df['DIAS_DESDE_COLETA'].isna().sum()}")
+        print(f"DEBUG COLETA: Pontos com coleta <= {dias_coleta} dias: {(df['DIAS_DESDE_COLETA'] <= dias_coleta).sum()}")
+        print(f"DEBUG COLETA: Pontos OK (None OU <= {dias_coleta}): {pontos_com_coleta_ok.sum()}")
+        
         print(f"DEBUG: Total de máquinas qualificadas antes do filtro de coleta: {len(todas_maquinas_qualificadas)}")
         print(f"DEBUG: Linha de corte configurada: {dias_coleta} dias")
         

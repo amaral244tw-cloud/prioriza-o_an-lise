@@ -60,7 +60,7 @@ def days_since_last_sync(datetime_str) -> "int | None":
     """
     Calcula diferença em dias entre hoje e um timestamp ISO.
     Aceita formatos como '2024-01-15T10:30:00.000Z' do spotLastSync.
-    Valores inválidos, vazios ou "-" retornam None.
+    Valores inválidos, vazios, "-", ou datas futuras (negativos) retornam None.
     """
     if pd.isna(datetime_str) or str(datetime_str).strip() in ["", "-"]:
         return None
@@ -77,7 +77,13 @@ def days_since_last_sync(datetime_str) -> "int | None":
     
     # Converter para timezone-aware para comparação
     hoje = pd.Timestamp.now(tz='UTC')
-    return (hoje - data).days
+    dias = (hoje - data).days
+    
+    # Se negativo (data no futuro), retornar None
+    if dias < 0:
+        return None
+    
+    return dias
 
 
 def clean_insights(df: pd.DataFrame) -> pd.Series:

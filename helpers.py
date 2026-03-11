@@ -65,9 +65,15 @@ def days_since_last_sync(datetime_str) -> "int | None":
     if pd.isna(datetime_str) or str(datetime_str).strip() in ["", "-"]:
         return None
     
-    data = pd.to_datetime(datetime_str, errors="coerce", utc=True)
+    datetime_str_clean = str(datetime_str).strip()
+    
+    # Tentar formato ISO primeiro
+    data = pd.to_datetime(datetime_str_clean, errors="coerce", utc=True, format="ISO8601")
     if pd.isna(data):
-        return None
+        # Fallback sem formato específico
+        data = pd.to_datetime(datetime_str_clean, errors="coerce", utc=True)
+        if pd.isna(data):
+            return None
     
     # Converter para timezone-aware para comparação
     hoje = pd.Timestamp.now(tz='UTC')

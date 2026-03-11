@@ -269,7 +269,7 @@ def register_callbacks(app):
                     html.Div([
                         html.Label("Alarmes:", style={"marginRight": "5px", "fontSize": "12px"}),
                         dcc.Input(
-                            id={"type": "input-dias-alarmes", "analista": analista},
+                            id={"type": "dias-alarmes-analista", "analista": analista},
                             type="number",
                             value=DEFAULT_DIAS_ALARMES,
                             style={"width": "60px"},
@@ -279,7 +279,7 @@ def register_callbacks(app):
                     html.Div([
                         html.Label("Insights:", style={"marginRight": "5px", "fontSize": "12px"}),
                         dcc.Input(
-                            id={"type": "input-dias-insights", "analista": analista},
+                            id={"type": "dias-insights-analista", "analista": analista},
                             type="number",
                             value=DEFAULT_DIAS_INSIGHTS,
                             style={"width": "60px"},
@@ -289,7 +289,7 @@ def register_callbacks(app):
                     html.Div([
                         html.Label("Notas:", style={"marginRight": "5px", "fontSize": "12px"}),
                         dcc.Input(
-                            id={"type": "input-dias-notas", "analista": analista},
+                            id={"type": "dias-notas-analista", "analista": analista},
                             type="number",
                             value=DEFAULT_DIAS_NOTAS,
                             style={"width": "60px"},

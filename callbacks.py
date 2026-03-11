@@ -625,6 +625,8 @@ def register_callbacks(app):
         
         # Para cada máquina qualificada, verificar se pelo menos 1 spot tem coleta atualizada
         maquinas_com_coleta_ok = set()
+        maquinas_removidas_detalhes = []
+        
         for maquina in todas_maquinas_qualificadas:
             pontos_maquina = df[df["MÁQUINA"] == maquina]
             dias_coleta_maquina = pontos_maquina["DIAS_DESDE_COLETA"]
@@ -635,9 +637,22 @@ def register_callbacks(app):
             
             if tem_coleta_atualizada.any():
                 maquinas_com_coleta_ok.add(maquina)
+            else:
+                # Guardar detalhes da máquina removida
+                min_dias = dias_coleta_maquina[dias_coleta_maquina.notna()].min() if dias_coleta_maquina.notna().any() else None
+                maquinas_removidas_detalhes.append({
+                    'maquina': maquina,
+                    'menor_dias': min_dias
+                })
         
         print(f"DEBUG: Máquinas com coleta OK (filtro <= {dias_coleta} dias): {len(maquinas_com_coleta_ok)}")
         print(f"DEBUG: Máquinas REMOVIDAS pelo filtro de coleta: {len(todas_maquinas_qualificadas) - len(maquinas_com_coleta_ok)}")
+        
+        # Mostrar primeiras 5 removidas com seus valores mínimos
+        if maquinas_removidas_detalhes:
+            print(f"DEBUG: Primeiras 5 máquinas removidas (menor dias de cada):")
+            for det in sorted(maquinas_removidas_detalhes, key=lambda x: x['menor_dias'] if x['menor_dias'] else 9999)[:5]:
+                print(f"  {det['maquina']}: menor_dias = {det['menor_dias']}")
         
         # Trazer TODOS os pontos das máquinas que passaram no filtro de coleta
         df_final = df[df["MÁQUINA"].isin(maquinas_com_coleta_ok)].sort_values(

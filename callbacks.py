@@ -479,7 +479,8 @@ def register_callbacks(app):
         if not data:
             raise PreventUpdate
 
-        df = pd.DataFrame(data)
+        # CRÍTICO: Fazer cópia para evitar modificar o objeto em cache
+        df = pd.DataFrame(data).copy()
         
         # Usar valor padrão se dias_coleta for None
         if dias_coleta is None:

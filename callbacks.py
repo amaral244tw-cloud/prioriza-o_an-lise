@@ -80,6 +80,8 @@ def register_callbacks(app):
     @app.callback(
         Output("df-base", "data"),
         Output("loading-output", "children"),
+        Output("filtros-analistas-container", "children", allow_duplicate=True),
+        Output("filtros-por-analista", "data", allow_duplicate=True),
         Input("btn-processar-uploads", "n_clicks"),
         State("upload-base", "contents"),
         State("upload-mosaic", "contents"),
@@ -228,7 +230,84 @@ def register_callbacks(app):
         print(f"DEBUG processar_base: Colunas: {list(base.columns)}")
         print(f"DEBUG processar_base: Analistas únicos: {base['ANALISTA RESPONSÁVEL'].unique()}")
 
-        return base.to_dict("records"), ""
+        # Gerar filtros por analista
+        analistas = sorted(base["ANALISTA RESPONSÁVEL"].dropna().unique())
+        print(f"DEBUG processar_base: Gerando filtros para {len(analistas)} analistas")
+        
+        from layout import DEFAULT_DIAS_ALARMES, DEFAULT_DIAS_INSIGHTS, DEFAULT_DIAS_NOTAS
+        
+        filtros_default = {
+            analista: {
+                "alarmes": ["A1", "A2"],
+                "dias_alarmes": DEFAULT_DIAS_ALARMES,
+                "dias_insights": DEFAULT_DIAS_INSIGHTS,
+                "dias_notas": DEFAULT_DIAS_NOTAS,
+            }
+            for analista in analistas
+        }
+        
+        # Criar controles UI
+        filtros_children = []
+        for analista in analistas:
+            filtros_children.append(
+                html.Div([
+                    html.Div(
+                        f"{analista}:",
+                        style={"fontWeight": "bold", "minWidth": "120px", "display": "flex", "alignItems": "center"}
+                    ),
+                    html.Div([
+                        dcc.Checklist(
+                            id={"type": "filtro-alarme-analista", "analista": analista},
+                            options=[
+                                {"label": " A1", "value": "A1"},
+                                {"label": " A2", "value": "A2"},
+                            ],
+                            value=["A1", "A2"],
+                            inline=True,
+                        ),
+                    ], style={"minWidth": "100px"}),
+                    html.Div([
+                        html.Label("Alarmes:", style={"marginRight": "5px", "fontSize": "12px"}),
+                        dcc.Input(
+                            id={"type": "input-dias-alarmes", "analista": analista},
+                            type="number",
+                            value=DEFAULT_DIAS_ALARMES,
+                            style={"width": "60px"},
+                            debounce=True,
+                        ),
+                    ], style={"marginRight": "15px"}),
+                    html.Div([
+                        html.Label("Insights:", style={"marginRight": "5px", "fontSize": "12px"}),
+                        dcc.Input(
+                            id={"type": "input-dias-insights", "analista": analista},
+                            type="number",
+                            value=DEFAULT_DIAS_INSIGHTS,
+                            style={"width": "60px"},
+                            debounce=True,
+                        ),
+                    ], style={"marginRight": "15px"}),
+                    html.Div([
+                        html.Label("Notas:", style={"marginRight": "5px", "fontSize": "12px"}),
+                        dcc.Input(
+                            id={"type": "input-dias-notas", "analista": analista},
+                            type="number",
+                            value=DEFAULT_DIAS_NOTAS,
+                            style={"width": "60px"},
+                            debounce=True,
+                        ),
+                    ]),
+                ], style={
+                    "display": "flex",
+                    "alignItems": "center",
+                    "gap": "10px",
+                    "marginBottom": "10px",
+                    "padding": "10px",
+                    "backgroundColor": "#f5f5f5",
+                    "borderRadius": "5px",
+                })
+            )
+
+        return base.to_dict("records"), "", html.Div(filtros_children), filtros_default
 
     # ======================================================
     # GERAR FILTROS DINÂMICOS POR ANALISTA
